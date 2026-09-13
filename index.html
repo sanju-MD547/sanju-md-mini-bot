@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SANJU BOT — Admin Panel</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#090909;color:#f5f1e6}
+.app{display:flex;min-height:100vh}.side{width:250px;background:#111;border-right:1px solid #2b2418;padding:24px 16px}
+.logo{font-size:27px;font-weight:900;letter-spacing:3px;color:#e8bf62}.sub{font-size:11px;color:#8d8d8d;letter-spacing:2px;margin-top:4px}
+.nav{margin-top:35px}.nav button{display:block;width:100%;padding:14px 15px;margin:7px 0;border:0;border-radius:10px;background:transparent;color:#aaa;text-align:left;font-size:14px;cursor:pointer}.nav button.active,.nav button:hover{background:#211a0e;color:#f0c866}
+.main{flex:1;padding:30px;max-width:1200px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px}.title{font-size:25px;font-weight:800}.badge{padding:8px 13px;border-radius:20px;background:#12351e;color:#68db89;font-size:12px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.card{background:#121212;border:1px solid #28231a;border-radius:15px;padding:20px}.label{color:#888;font-size:12px}.num{font-size:28px;font-weight:800;margin-top:9px}.gold{color:#e8bf62}
+.panel{margin-top:20px;background:#121212;border:1px solid #28231a;border-radius:15px;padding:22px}.panel h2{font-size:17px;margin:0 0 18px}
+.row{display:flex;justify-content:space-between;align-items:center;padding:15px 0;border-bottom:1px solid #242424}.row:last-child{border:0}.row small{display:block;color:#777;margin-top:4px}
+.switch{width:48px;height:27px;background:#2d2d2d;border-radius:20px;position:relative;cursor:pointer}.switch i{width:21px;height:21px;background:#aaa;border-radius:50%;position:absolute;top:3px;left:4px;transition:.2s}.switch.on{background:#8b6827}.switch.on i{left:23px;background:#fff}
+button.action{background:#d9ad51;color:#111;border:0;padding:11px 16px;border-radius:9px;font-weight:800;cursor:pointer}
+.cmds{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.cmd{padding:14px;background:#191919;border-radius:10px;color:#ddd}.cmd b{color:#e8bf62}
+.activity{color:#aaa;font-size:13px;line-height:1.8}
+@media(max-width:800px){.side{width:75px}.logo,.sub,.nav button span{display:none}.nav button{text-align:center}.main{padding:18px}.grid{grid-template-columns:repeat(2,1fr)}.cmds{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="side">
+  <div class="logo">SANJU</div><div class="sub">BOT CONTROL</div>
+  <div class="nav">
+    <button class="active" onclick="show('dashboard',this)">🏠 <span>Dashboard</span></button>
+    <button onclick="show('commands',this)">⚙️ <span>Commands</span></button>
+    <button onclick="show('users',this)">👥 <span>Users</span></button>
+    <button onclick="show('activity',this)">📊 <span>Activity</span></button>
+    <button onclick="show('settings',this)">🔐 <span>Settings</span></button>
+  </div>
+</aside>
+<main class="main">
+<section id="dashboard">
+  <div class="top"><div><div class="title">SANJU BOT Dashboard</div><div class="label">WhatsApp bot control center</div></div><div id="status" class="badge">● BOT ONLINE</div></div>
+  <div class="grid">
+    <div class="card"><div class="label">BOT STATUS</div><div class="num gold">ONLINE</div></div>
+    <div class="card"><div class="label">USERS</div><div class="num">128</div></div>
+    <div class="card"><div class="label">MESSAGES</div><div class="num">2,481</div></div>
+    <div class="card"><div class="label">COMMANDS</div><div class="num">12</div></div>
+  </div>
+  <div class="panel"><h2>Quick Control</h2>
+    <div class="row"><div><b>WhatsApp Bot</b><small>Turn the bot on or off</small></div><div class="switch on" onclick="toggleBot(this)"><i></i></div></div>
+    <div class="row"><div><b>Auto Reply</b><small>Automatically respond to incoming messages</small></div><div class="switch on" onclick="this.classList.toggle('on')"><i></i></div></div>
+  </div>
+</section>
+<section id="commands" style="display:none"><div class="title">Bot Commands</div><div class="panel"><div class="cmds">
+<div class="cmd"><b>/menu</b><br>Show bot menu</div><div class="cmd"><b>/help</b><br>Show help</div>
+<div class="cmd"><b>/info</b><br>Bot information</div><div class="cmd"><b>/ping</b><br>Check bot response</div>
+<div class="cmd"><b>/admin</b><br>Admin controls</div><div class="cmd"><b>/status</b><br>Bot status</div>
+</div></div></section>
+<section id="users" style="display:none"><div class="title">Users</div><div class="panel"><div class="row"><div><b>Active users</b><small>Users who interacted with the bot</small></div><div class="num gold">128</div></div></div></section>
+<section id="activity" style="display:none"><div class="title">Activity</div><div class="panel"><div class="activity">07:21 — Bot started<br>07:19 — New user connected<br>07:12 — /menu command received<br>06:58 — Auto reply sent</div></div></section>
+<section id="settings" style="display:none"><div class="title">Settings</div><div class="panel">
+<div class="row"><div><b>Admin security</b><small>Production version should use a secure server-side login.</small></div><button class="action" onclick="alert('Connect your backend here')">Configure</button></div>
+<div class="row"><div><b>WhatsApp API</b><small>Connect the official WhatsApp Business Platform in the backend.</small></div><button class="action" onclick="alert('API credentials will be added in the backend.')">Connect</button></div>
+</div></section>
+</main>
+</div>
+<script>
+function show(id,btn){document.querySelectorAll('main section').forEach(s=>s.style.display='none');document.getElementById(id).style.display='block';document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));btn.classList.add('active')}
+function toggleBot(el){el.classList.toggle('on');let online=el.classList.contains('on');let s=document.getElementById('status');s.textContent=online?'● BOT ONLINE':'● BOT OFFLINE';s.style.color=online?'#68db89':'#ff7777';s.style.background=online?'#12351e':'#351212'}
+</script>
+</body>
+</html>
