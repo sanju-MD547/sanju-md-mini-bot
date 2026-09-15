@@ -1,0 +1,20 @@
+[functions]
+  directory = "netlify/functions"
+
+# Server-side authorization gate for the admin dashboard.
+# Netlify's edge evaluates the "Role" condition against the nf_jwt Identity
+# cookie before the file is ever served — this happens before any client-side
+# JavaScript runs, so it cannot be bypassed by editing or disabling the page's
+# own script.
+[[redirects]]
+  from = "/admin.html"
+  to = "/admin.html"
+  status = 200
+  force = true
+  conditions = { Role = ["admin"] }
+
+[[redirects]]
+  from = "/admin.html"
+  to = "/admin-login.html"
+  status = 302
+  force = true

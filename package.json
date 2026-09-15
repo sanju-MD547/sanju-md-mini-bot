@@ -1,0 +1,12 @@
+{
+  "name": "sanju-md-mini-bot",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "dependencies": {
+    "@netlify/identity": "^2.0.0"
+  },
+  "devDependencies": {
+    "@netlify/functions": "^6.0.0"
+  }
+}

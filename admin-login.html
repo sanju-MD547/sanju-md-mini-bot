@@ -12,19 +12,162 @@ h1{text-align:center;margin:0;color:#edca66;letter-spacing:2px}.sub{text-align:c
 label{display:block;color:#cdb36c;font-size:12px;margin:14px 0 7px}input{width:100%;padding:14px;border-radius:13px;border:1px solid #5b481f;background:#111;color:#fff;outline:none;font-size:14px}input:focus{border-color:#d0a83f}
 .pass{position:relative}.eye{position:absolute;right:10px;top:9px;border:0;background:none;color:#aaa;font-size:18px;cursor:pointer}
 .login{width:100%;margin-top:22px;padding:14px;border:0;border-radius:25px;background:linear-gradient(135deg,#f2d06b,#a87617);font-weight:900;color:#090909;cursor:pointer}
+.login:disabled{opacity:.6;cursor:default}
 .note{text-align:center;color:#666;font-size:11px;margin-top:18px;line-height:1.5}
+.msg{margin-top:16px;padding:10px 14px;border-radius:12px;font-size:12.5px;text-align:center;display:none}
+.msg.err{display:block;background:#3a121266;border:1px solid #c0473a66;color:#ffb3a8}
+.msg.ok{display:block;background:#123a1a66;border:1px solid #4ac07366;color:#a8ffbf}
+.hidden{display:none}
+.forgot{display:block;text-align:right;margin-top:8px}.forgot a{color:#a68a4c;font-size:11.5px;text-decoration:none}.forgot a:hover{text-decoration:underline}
 </style>
 </head>
 <body><main class="box">
 <div class="logo">S<br><small>MD</small></div>
 <h1>ADMIN LOGIN</h1><p class="sub">SANJU MD Mini Bot • Control Center</p>
-<form id="login">
-<label>USERNAME / EMAIL</label><input id="user" autocomplete="username" required placeholder="Enter username">
-<label>PASSWORD</label><div class="pass"><input id="pass" type="password" autocomplete="current-password" required placeholder="Enter password"><button class="eye" type="button" onclick="toggle()">◉</button></div>
-<button class="login" type="submit">🔐 LOGIN TO DASHBOARD</button>
-<p class="note">Login UI ready. Real authentication should be connected server-side; never put real passwords in this public GitHub code.</p>
-</form></main>
-<script>
-function toggle(){let x=document.getElementById('pass');x.type=x.type==='password'?'text':'password'}
-document.getElementById('login').onsubmit=e=>{e.preventDefault();alert('Secure authentication is not connected yet.')};
-</script></body></html>
+
+<form id="login-form">
+  <label>EMAIL</label><input id="email" type="email" autocomplete="username" required placeholder="Enter email">
+  <label>PASSWORD</label><div class="pass"><input id="password" type="password" autocomplete="current-password" required placeholder="Enter password"><button class="eye" type="button" id="toggle-pass">◉</button></div>
+  <p class="forgot"><a href="#" id="forgot-link">Forgot password?</a></p>
+  <button class="login" type="submit" id="login-btn">🔐 LOGIN TO DASHBOARD</button>
+</form>
+
+<form id="setpass-form" class="hidden">
+  <label id="setpass-label">SET A NEW PASSWORD</label>
+  <div class="pass"><input id="new-password" type="password" minlength="8" required placeholder="New password (min 8 characters)"></div>
+  <button class="login" type="submit" id="setpass-btn">✅ CONFIRM</button>
+</form>
+
+<div class="msg" id="msg"></div>
+<p class="note">Access is restricted to accounts with the admin role. Roles are managed in the Netlify Identity dashboard, never in this code.</p>
+</main>
+<script type="module">
+import {
+  login,
+  logout,
+  handleAuthCallback,
+  acceptInvite,
+  updateUser,
+  requestPasswordRecovery,
+  AuthError,
+  MissingIdentityError,
+} from 'https://esm.sh/@netlify/identity@2'
+
+const loginForm = document.getElementById('login-form')
+const setpassForm = document.getElementById('setpass-form')
+const setpassLabel = document.getElementById('setpass-label')
+const msg = document.getElementById('msg')
+const loginBtn = document.getElementById('login-btn')
+const setpassBtn = document.getElementById('setpass-btn')
+
+let pendingInviteToken = null
+
+function showMessage(text, kind) {
+  msg.textContent = text
+  msg.className = 'msg ' + kind
+}
+
+function describeError(error) {
+  if (error instanceof MissingIdentityError) {
+    return 'Identity is not enabled for this site yet.'
+  }
+  if (error instanceof AuthError) {
+    switch (error.status) {
+      case 401: return 'Invalid email or password.'
+      case 404: return 'No account found for that email.'
+      case 422: return 'That password does not meet the requirements.'
+      default: return error.message || 'Login failed.'
+    }
+  }
+  return 'Something went wrong. Please try again.'
+}
+
+async function goToDashboardIfAdmin(user) {
+  const roles = user?.roles ?? []
+  if (roles.includes('admin')) {
+    showMessage('Login successful. Redirecting…', 'ok')
+    window.location.href = '/admin.html'
+    return
+  }
+  showMessage('This account does not have admin access.', 'err')
+  await logout().catch(() => {})
+}
+
+loginForm.addEventListener('submit', async (e) => {
+  e.preventDefault()
+  loginBtn.disabled = true
+  showMessage('Signing in…', 'ok')
+  try {
+    const email = document.getElementById('email').value.trim()
+    const password = document.getElementById('password').value
+    const user = await login(email, password)
+    await goToDashboardIfAdmin(user)
+  } catch (error) {
+    showMessage(describeError(error), 'err')
+  } finally {
+    loginBtn.disabled = false
+  }
+})
+
+document.getElementById('toggle-pass').addEventListener('click', () => {
+  const input = document.getElementById('password')
+  input.type = input.type === 'password' ? 'text' : 'password'
+})
+
+document.getElementById('forgot-link').addEventListener('click', async (e) => {
+  e.preventDefault()
+  const email = document.getElementById('email').value.trim()
+  if (!email) {
+    showMessage('Enter your email above first, then click "Forgot password?".', 'err')
+    return
+  }
+  try {
+    await requestPasswordRecovery(email)
+    showMessage('If that account exists, a password reset email is on its way.', 'ok')
+  } catch (error) {
+    showMessage(describeError(error), 'err')
+  }
+})
+
+setpassForm.addEventListener('submit', async (e) => {
+  e.preventDefault()
+  setpassBtn.disabled = true
+  try {
+    const newPassword = document.getElementById('new-password').value
+    const user = pendingInviteToken
+      ? await acceptInvite(pendingInviteToken, newPassword)
+      : await updateUser({ password: newPassword })
+    setpassForm.classList.add('hidden')
+    loginForm.classList.remove('hidden')
+    await goToDashboardIfAdmin(user)
+  } catch (error) {
+    showMessage(describeError(error), 'err')
+  } finally {
+    setpassBtn.disabled = false
+  }
+})
+
+async function processCallback() {
+  try {
+    const result = await handleAuthCallback()
+    if (!result) return
+    if (result.type === 'invite') {
+      pendingInviteToken = result.token
+      setpassLabel.textContent = 'ACCEPT INVITE — SET YOUR PASSWORD'
+      loginForm.classList.add('hidden')
+      setpassForm.classList.remove('hidden')
+      showMessage('Set a password to activate your admin account.', 'ok')
+    } else if (result.type === 'recovery') {
+      setpassLabel.textContent = 'SET A NEW PASSWORD'
+      loginForm.classList.add('hidden')
+      setpassForm.classList.remove('hidden')
+      showMessage('Choose a new password to continue.', 'ok')
+    }
+  } catch (error) {
+    showMessage(describeError(error), 'err')
+  }
+}
+
+processCallback()
+</script>
+</body></html>
