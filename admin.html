@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SANJU MD • Admin Dashboard</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:#050505;color:#fff;font-family:Arial,sans-serif}
+body:before{content:"";position:fixed;inset:-30%;background:radial-gradient(circle at 50% 0%,#c59b3b1c,transparent 34%);pointer-events:none}
+nav{position:sticky;top:0;z-index:5;padding:16px 7%;display:flex;justify-content:space-between;align-items:center;background:#090909e8;backdrop-filter:blur(12px);border-bottom:1px solid #3d3015}
+.brand{color:#e9c45d;font-weight:900}.navright{display:flex;gap:12px;align-items:center}
+#who{color:#a89055;font-size:12.5px}
+.logout{border:1px solid #b58a27;border-radius:25px;padding:9px 16px;color:#f1d47a;background:none;cursor:pointer;font-size:13px}
+main{max-width:1000px;margin:auto;padding:50px 20px}
+h1{color:#edca66;letter-spacing:2px;margin-bottom:6px}
+.sub{color:#888;margin-top:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:30px}
+.card{padding:22px;border-radius:18px;background:#0d0d0d;border:1px solid #80632344}
+.card h3{color:#e9c45d;margin:0 0 8px}.card p{color:#999;font-size:13px;line-height:1.6;margin:0}
+.gate{min-height:100vh;display:grid;place-items:center;color:#888}
+.hidden{display:none}
+</style>
+</head>
+<body>
+
+<div id="gate" class="gate">Checking admin access…</div>
+
+<div id="app" class="hidden">
+<nav>
+  <div class="brand">👑 SANJU MD — Admin</div>
+  <div class="navright">
+    <span id="who"></span>
+    <button class="logout" id="logout-btn">Log out</button>
+  </div>
+</nav>
+<main>
+  <h1>Admin Dashboard</h1>
+  <p class="sub">Control center for SANJU MD Mini Bot. This page is only reachable by accounts with the <b>admin</b> role.</p>
+  <div class="grid">
+    <div class="card"><h3>🛡️ Access</h3><p>Your session was verified server-side against your Netlify Identity role before this page loaded.</p></div>
+    <div class="card"><h3>👥 Manage Admins</h3><p>Grant or revoke the admin role from the Identity tab in the Netlify dashboard.</p></div>
+    <div class="card"><h3>🤖 Bot Status</h3><p>Hook up bot management widgets here as the project grows.</p></div>
+  </div>
+</main>
+</div>
+
+<script type="module">
+import { getUser, logout } from 'https://esm.sh/@netlify/identity@2'
+
+const gate = document.getElementById('gate')
+const app = document.getElementById('app')
+
+function denyAccess() {
+  window.location.href = '/admin-login.html'
+}
+
+async function checkAccess() {
+  const user = await getUser()
+  if (!user || !(user.roles ?? []).includes('admin')) {
+    denyAccess()
+    return
+  }
+
+  try {
+    const res = await fetch('/.netlify/functions/admin-check')
+    if (!res.ok) {
+      denyAccess()
+      return
+    }
+    const data = await res.json()
+    if (!data.authorized) {
+      denyAccess()
+      return
+    }
+    document.getElementById('who').textContent = data.name || data.email
+  } catch {
+    denyAccess()
+    return
+  }
+
+  gate.classList.add('hidden')
+  app.classList.remove('hidden')
+}
+
+document.getElementById('logout-btn').addEventListener('click', async () => {
+  await logout().catch(() => {})
+  window.location.href = '/admin-login.html'
+})
+
+checkAccess()
+</script>
+</body></html>
